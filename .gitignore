@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# pnpm
+
+# Build outputs
+build/
+dist/
+*.js
+*.d.ts
+*.map
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage/
+.nyc_output/
+
+# npm pack output
+*.tgz
+
+# Added for consistency
+.next/

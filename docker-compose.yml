@@ -1,0 +1,37 @@
+# One-command local setup: MongoDB plus the SelfHub server image.
+#
+#   docker compose up -d mongo            MongoDB only, on localhost:27017 (matches the default MONGODB_URI)
+#   docker compose run --rm -T selfhub    the MCP server over stdio (what an MCP client launches)
+#   docker compose run --rm -T selfhub build/seed.js   load the sample data
+
+services:
+  mongo:
+    image: mongo:9
+    restart: unless-stopped
+    environment:
+      # mongod refuses to start on Linux kernels 6.19.0 to 7.0.13 when tcmalloc uses
+      # per-CPU caches (SERVER-121912). rseq=1 lets glibc register rseq first, so
+      # tcmalloc falls back to per-thread caches and the startup check passes.
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - selfhub-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  selfhub:
+    build: .
+    image: selfhub-mcp-server:local
+    stdin_open: true
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/selfhub
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  selfhub-data:

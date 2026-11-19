@@ -1,0 +1,75 @@
+# Changelog
+
+## [0.3.0] - 2026-10-18
+
+- Add an end-to-end test suite (`pnpm test`, 14 tests): each test spawns `build/index.js`, connects with the MCP SDK client and runs against `mongodb-memory-server`. CI runs it on every push and PR. Against v0.2.5, 7 of the 14 fail
+- Add `pnpm demo`: three separate server processes (Claude Desktop, Claude Code, VS Code) share one in-memory MongoDB; what one stores, the others recall
+- Add a `Dockerfile` and `docker-compose.yml` (MongoDB 8 plus the server), with a CI job that builds the image and checks the `initialize` reply over stdio
+- Prepare npm and MCP Registry publishing: `bin`, `files`, `mcpName` and `engines` in `package.json`, `server.json`, and a tag-triggered `release.yml` that publishes with npm trusted publishing and GitHub OIDC
+- Fix the first `search_memories` call on a new database failing with "text index required for $text query": indexes are now built before the server accepts calls
+- Fix `search_memories` filters (category, type, tags) running on the top 100 text hits instead of inside the query, which could drop matching memories; results now carry the MongoDB `textScore` as `score`
+- Fix `delete_memory` leaving the deleted ID in every context, which inflated `memoryCount`
+- Fix `create_context` storing memory IDs that do not exist
+- `list_memories` sorts, skips and limits in MongoDB instead of loading every match into Node
+- `activate_context` loads a context's memories with one `$in` query instead of one query and one write per memory, and no longer counts the bulk load as an access
+- Exit cleanly when the client closes stdin instead of idling on the open MongoDB connection
+- `list_memories` declares `offset` as a non-negative integer and clamps negative or fractional values to a whole number from 0, since MongoDB `skip()` rejects them
+- `release.yml` pins `pnpm/action-setup` to the v6.1.0 commit and npm to 12.2.0 (installed with `--ignore-scripts`), downloads `mcp-publisher` v1.8.1 over HTTPS only and checks its sha256, and skips `npm publish` when the version is already on npm so a failed registry step can be re-run
+- `ci.yml` pins `pnpm/action-setup` to the same v6.1.0 commit (SonarCloud `githubactions:S7637`)
+- `.env.example` drops the credential-style MongoDB Atlas URI that GitHub secret scanning still flagged and defaults to `mongodb://localhost:27017/selfhub`, the same URI the server falls back to when `MONGODB_URI` is unset
+- Raise pnpm overrides so `pnpm audit` is clean again: body-parser 2.4.0 (GHSA-27r3-jxmh-p828, high), fast-uri 4.2.3 (2 moderate, 2 low), and zod 4.6.7 under the MCP SDK (GHSA-mrhx-c7xc-m3w5, high; zod 3 has no patched release)
+- Refresh the lockfile so `pnpm audit` is clean again: follow-redirects 1.16.2 under mongodb-memory-server (GHSA-mrwp-f3q8-3g9p, high), qs 6.17.1 and @hono/node-server 2.1.5 under the MCP SDK (2 moderate)
+- `docker-compose.yml` starts MongoDB with `GLIBC_TUNABLES=glibc.pthread.rseq=1`: `mongo:8` (8.3) refuses to start on Linux kernels 6.19.0 to 7.0.13 (SERVER-121912), which GitHub's ubuntu runners now boot, so the CI Docker job failed with an unhealthy mongo container
+- CI caps the test step at 10 minutes, so a server that stops exiting on stdin close fails the job instead of hanging it
+- README: Docker Compose and from-source come first in the quick start; npm is marked as available after the first release, with the one-time npm trusted publisher setup documented
+
+## [0.2.5] - 2026-10-18
+
+- Fix `get_stats`, `list_memories` and `list_contexts` failing with "Arguments are required" when the client omits `arguments`
+- Fix `search_memories` ignoring the `type` filter and `create_context` ignoring `memoryIds`: both were documented but never reached the services
+- Fix `activate_context` with an unknown ID deactivating the currently active context
+- Report the real package version in the MCP `serverInfo` handshake instead of a hard-coded 0.1.0
+- Fix `pnpm clean` (and `pnpm reset`), which called `rimraf` without it being installed
+- Move pnpm overrides from `package.json` to `pnpm-workspace.yaml`: pnpm 12 ignores the `pnpm` field, so since 0.2.4 the lockfile had fallen back to vulnerable `ip-address` 10.1.0 (1 high, 4 moderate advisories); now 10.7.4, `pnpm audit` is clean
+- Bump `@modelcontextprotocol/sdk` to 1.32.1 (GHSA-6qxp-vccf-f47h, high), mongoose 9.11.2, dotenv 18.0.8, @types/node 26.6.5, tsx 4.23.15
+- CI: least-privilege `permissions: contents: read`, install with `--ignore-scripts`, and a `pnpm audit --audit-level=high` step, because GitHub's dependency graph only reads the first YAML document of the pnpm 12 lockfile and no longer sees app dependencies
+- README: architecture diagram, design decisions, Claude Code setup
+
+## [0.2.4] - 2026-10-11
+
+- Monthly major update: Node 24, pnpm 12, TypeScript 7, dotenv 18, @hono/node-server 2, actions/checkout and setup-node v7, pnpm/action-setup v6
+- pnpm 12 refuses to run unapproved dependency build scripts (`ERR_PNPM_IGNORED_BUILDS`), so `pnpm-workspace.yaml` now approves esbuild's install script with `allowBuilds`
+- dotenv 18 with `quiet: true` still writes nothing to stdout, so the MCP stdio channel stays clean
+
+## [0.2.3] - 2026-10-06
+
+- Keep stdout clean for the MCP stdio transport: load dotenv with `quiet: true` (dotenv 17 logs an injection banner to stdout) and send the MongoDB connect/close log lines to stderr
+
+## [0.2.2] - 2026-09-03
+
+- Add pnpm override for qs >=6.16.0 to resolve array-limit bypass advisory (Dependabot alert #42)
+
+## [0.2.1] - 2026-09-02
+
+- Bump mongoose to 9.9.4 and add pnpm overrides for hono, @hono/node-server, fast-uri, ip-address, body-parser to resolve Dependabot security alerts
+
+## [0.2.0] - 2026-03-14
+
+- Fix .env.example to use placeholder credentials
+
+## [0.1.0] - 2025-11-27
+
+- Implement MongoDB integration for persistent storage
+- Memory and Context schemas with full-text search indexes
+- 9 MCP tools: store/retrieve/list/search/delete memory, create/activate/list contexts, get stats
+
+## [0.0.2] - 2025-11-09
+
+- Enhance README with features and setup instructions
+- Add GitHub Actions workflows and funding options
+
+## [0.0.1] - 2025-11-09
+
+- Initialize SelfHub MCP server with TypeScript
+- Memory and context management tools via stdio transport
+- pnpm workspace setup
