@@ -189,14 +189,5 @@ Refer to the Docker Compose configuration for the server startup process.
 - Multi-user support
 - Cloud synchronization
 
-## License and Attribution
-
-This project is distributed under the MIT License. Refer to the included `LICENSE` file for the complete license terms.
-
-**Attribution:** This project is based on the original SelfHub project. Original authorship and copyright notices are retained. Additional modifications and contributions should be credited separately.
-
----
-
-**Maintained by:** [Krish Gupta](https://github.com/krigup789)
 
 **Repository:** [MySelfHub-AI-Powered-Personal-Memory-Hub](https://github.com/krigup789/MySelfHub-AI-Powered-Personal-Memory-Hub)
